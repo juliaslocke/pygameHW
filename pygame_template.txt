@@ -1,0 +1,8 @@
+Plan for game:
+
+- Frogger-type game
+- Will need two types of Sprites: player and enemies
+- Goal: Move player from bottom of the screen to the top without touching enemy
+- Score: Point for each time player makes it to the top of the screen (increase speed of enemies and bump player back to bottom after each point)
+- If time, add coin collection for bonus points
+- Not sure what sound to use yet

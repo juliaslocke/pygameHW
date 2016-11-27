@@ -49,6 +49,32 @@ class Mouse(pygame.sprite.Sprite):
 			if direction in (LEFT, RIGHT):
 				self.dx = X_MAX/2
 
+class Cat(pygame.sprite.Sprite):
+	def __init__(self, x_pos, y_pos, groups):
+		super(Cat, self).__init__()
+		self.image = pygame.image.load("cat.png").convert_alpha()
+		self.rect = self.image.get_rect()
+		self.rect.center = (x_pos, y_pos)
+		self.x = x_pos
+		self.y = y_pos
+
+		self.velocity = 3
+
+		self.add(groups)
+
+	def update(self):
+		x,y = self.rect.center
+
+		if x > X_MAX:
+			x,y = (0, self.y)
+		self.rect.center = x,y
+
+	# def move(self):
+	# 	x, y = self.x, self.y
+	# 	while True:
+	# 		x += 5
+	# 		self.update()
+
 def main():
 	game_over = False
 
@@ -56,10 +82,30 @@ def main():
 	pygame.mixer.init()
 	screen = pygame.display.set_mode((X_MAX, Y_MAX), DOUBLEBUF)
 	mouse = pygame.sprite.Group()
+	cat = pygame.sprite.Group()
 
 	empty = pygame.Surface((X_MAX, Y_MAX))
 	mousey = Mouse(everything)
 	mousey.add(everything)
+	kitty_list = [
+	Cat(X_MAX-50, Y_MAX-165, everything),
+	Cat(X_MAX-230, Y_MAX-165, everything),
+	Cat(X_MAX-410, Y_MAX-165, everything),
+	Cat(X_MAX-590, Y_MAX-165, everything),
+	Cat(X_MAX-770, Y_MAX-165, everything),
+	Cat(X_MAX-140, Y_MAX-300, everything),
+	Cat(X_MAX-320, Y_MAX-300, everything),
+	Cat(X_MAX-500, Y_MAX-300, everything),
+	Cat(X_MAX-680, Y_MAX-300, everything),
+	#Cat(X_MAX-770, Y_MAX-300, everything),
+	Cat(X_MAX-50, Y_MAX-435, everything),
+	Cat(X_MAX-230, Y_MAX-435, everything),
+	Cat(X_MAX-410, Y_MAX-435, everything),
+	Cat(X_MAX-590, Y_MAX-435, everything),
+	Cat(X_MAX-770, Y_MAX-435, everything)]
+	
+	for kitty in kitty_list:
+		kitty.add(everything)
 
 	while True:
 		for event in pygame.event.get():
@@ -85,6 +131,8 @@ def main():
 						mousey.move(RIGHT, STOP)
 					if event.key == K_UP:
 						mousey.move(UP, STOP)
+		# for kitty in kitty_list:
+		# 	kitty.move()
 
 		if game_over:
 			sys.exit()

@@ -18,23 +18,14 @@ class Mouse(pygame.sprite.Sprite):
 		self.image = pygame.image.load("mouse.png").convert_alpha()
 		self.rect = self.image.get_rect()
 		self.rect.center = (X_MAX/2, Y_MAX)
-		self.dx = self.dy = 0
+		self.dx = 0
+		self.dy = 0
 		self.health = 3
 		self.score = 0
 
 		self.add(groups)
 		self.velocity = 2
 		self.autopilot = False
-
-	def update(self):
-		x, y = self.rect.center
-		if not self.autopilot:
-			self.rect.center = x + self.dx, y + self.dy
-
-			if self.health < 0:
-				self.kill()
-		else:
-			self.rect.center = x,y
 
 	def move(self, direction, operation):
 		v = 5
@@ -49,6 +40,16 @@ class Mouse(pygame.sprite.Sprite):
 			if direction in (LEFT, RIGHT):
 				self.dx = X_MAX/2
 
+	def update(self):
+		x, y = self.rect.center
+		if not self.autopilot:
+			self.rect.center = x + self.dx, y + self.dy
+
+			if self.health < 0:
+				self.kill()
+		else:
+			self.rect.center = x,y
+
 class Cat(pygame.sprite.Sprite):
 	def __init__(self, x_pos, y_pos, groups):
 		super(Cat, self).__init__()
@@ -58,22 +59,18 @@ class Cat(pygame.sprite.Sprite):
 		self.x = x_pos
 		self.y = y_pos
 
-		self.velocity = 3
-
 		self.add(groups)
 
+	def move(self):
+		x_vel = 3
+		self.x += x_vel
+		if self.x > X_MAX:
+			self.x = 0
+		self.rect.center = self.x, self.y
+
 	def update(self):
-		x,y = self.rect.center
+		self.move()
 
-		if x > X_MAX:
-			x,y = (0, self.y)
-		self.rect.center = x,y
-
-	# def move(self):
-	# 	x, y = self.x, self.y
-	# 	while True:
-	# 		x += 5
-	# 		self.update()
 
 def main():
 	game_over = False

@@ -13,13 +13,13 @@ START, STOP = 0, 1
 everything = pygame.sprite.Group()
 
 class Mouse(pygame.sprite.Sprite):
-	def __init__(self, groups):
+	def __init__(self, x_pos, y_pos, groups):
 		super(Mouse, self).__init__()
-		self.image = pygame.image.load("mouse.png").convert_alpha()
+		self.image = pygame.image.load("mouse.bmp").convert_alpha()
 		self.rect = self.image.get_rect()
-		self.rect.center = (X_MAX/2, Y_MAX)
-		self.dx = 0
-		self.dy = 0
+		self.rect.center = x_pos,y_pos
+		self.x = x_pos
+		self.y = y_pos
 		self.health = 3
 		self.score = 0
 
@@ -30,30 +30,43 @@ class Mouse(pygame.sprite.Sprite):
 	def move(self, direction, operation):
 		v = 5
 		if operation == START:
-			if direction in (UP, DOWN):
-				self.dy = {UP: -v, DOWN: v}[direction]
-			if direction in (LEFT, RIGHT):
-				self.dx = {LEFT: -v, RIGHT: v}[direction]
+			if direction == UP:
+				self.y -= v
+			if direction == DOWN:
+				self.y += v
+				#self.dy = {UP: -v, DOWN: v}[direction]
+
+			if direction == RIGHT:
+				self.x += v
+			if direction == LEFT:
+				self.x -= v
+				#self.dx = {LEFT: -v, RIGHT: v}[direction]
+		
 		if operation == STOP:
-			if direction in (UP, DOWN):
-				self.dy = 0
-			if direction in (LEFT, RIGHT):
-				self.dx = X_MAX/2
+			if direction in (UP, DOWN, LEFT, RIGHT):
+				self.rect.center = self.x, self.y
+				#self.dy = 0
+			#if direction in (LEFT, RIGHT):
+			#	self.dx = X_MAX/2
 
 	def update(self):
-		x, y = self.rect.center
-		if not self.autopilot:
-			self.rect.center = x + self.dx, y + self.dy
-
-			if self.health < 0:
-				self.kill()
+		#x, y = self.rect.center
+		# if not self.autopilot:
+			# self.rect.center = x + self.x, y + self.y
+		if self.y == 0:
+			self.y = Y_MAX
+			self.rect.center = self.x,self.y
 		else:
-			self.rect.center = x,y
+			self.rect.center = self.x, self.y
+		if self.health < 0:
+			self.kill()
+		# else:
+		# 	self.rect.center = x,y
 
 class Cat(pygame.sprite.Sprite):
 	def __init__(self, x_pos, y_pos, groups):
 		super(Cat, self).__init__()
-		self.image = pygame.image.load("cat.png").convert_alpha()
+		self.image = pygame.image.load("cat.bmp").convert_alpha()
 		self.rect = self.image.get_rect()
 		self.rect.center = (x_pos, y_pos)
 		self.x = x_pos
@@ -62,10 +75,10 @@ class Cat(pygame.sprite.Sprite):
 		self.add(groups)
 
 	def move(self):
-		x_vel = 3
+		x_vel = 1
 		self.x += x_vel
 		if self.x > X_MAX:
-			self.x = 0
+			self.x = -10
 		self.rect.center = self.x, self.y
 
 	def update(self):
@@ -82,7 +95,7 @@ def main():
 	cat = pygame.sprite.Group()
 
 	empty = pygame.Surface((X_MAX, Y_MAX))
-	mousey = Mouse(everything)
+	mousey = Mouse(X_MAX/2, Y_MAX, everything)
 	mousey.add(everything)
 	kitty_list = [
 	Cat(X_MAX-50, Y_MAX-165, everything),
@@ -90,11 +103,12 @@ def main():
 	Cat(X_MAX-410, Y_MAX-165, everything),
 	Cat(X_MAX-590, Y_MAX-165, everything),
 	Cat(X_MAX-770, Y_MAX-165, everything),
+	Cat(25, Y_MAX-300, everything),
 	Cat(X_MAX-140, Y_MAX-300, everything),
 	Cat(X_MAX-320, Y_MAX-300, everything),
 	Cat(X_MAX-500, Y_MAX-300, everything),
 	Cat(X_MAX-680, Y_MAX-300, everything),
-	#Cat(X_MAX-770, Y_MAX-300, everything),
+	Cat(X_MAX-680, Y_MAX-300, everything),
 	Cat(X_MAX-50, Y_MAX-435, everything),
 	Cat(X_MAX-230, Y_MAX-435, everything),
 	Cat(X_MAX-410, Y_MAX-435, everything),
@@ -106,30 +120,32 @@ def main():
 
 	while True:
 		for event in pygame.event.get():
-			if event.type == QUIT or event.type == K_ESCAPE:
+			if event.type == K_ESCAPE:
 				sys.exit()
 			if not game_over:
-				if event.type == KEYDOWN:
+				if event.type in [KEYDOWN, KEYUP, K_LEFT, K_RIGHT]:
 					if event.key == K_DOWN:
 						mousey.move(DOWN, START)
-					if event.key == K_LEFT:
-						mousey.move(LEFT, START)
-					if event.key == K_RIGHT:
-						mousey.move(RIGHT, START)
-					if event.key == K_UP:
-						mousey.move(UP, START)
-
-				if event.type == KEYUP:
-					if event.key == K_DOWN:
 						mousey.move(DOWN, STOP)
 					if event.key == K_LEFT:
+						mousey.move(LEFT, START)
 						mousey.move(LEFT, STOP)
 					if event.key == K_RIGHT:
+						mousey.move(RIGHT, START)
 						mousey.move(RIGHT, STOP)
 					if event.key == K_UP:
+						mousey.move(UP, START)
 						mousey.move(UP, STOP)
-		# for kitty in kitty_list:
-		# 	kitty.move()
+
+				#if event.type == KEYUP:
+					#if event.key == K_DOWN:
+					#	mousey.move(DOWN, STOP)
+					#if event.key == K_LEFT:
+					#	mousey.move(LEFT, STOP)
+					#if event.key == K_RIGHT:
+					#	mousey.move(RIGHT, STOP)
+					#if event.key == K_UP:
+						#mousey.move(UP, STOP)
 
 		if game_over:
 			sys.exit()

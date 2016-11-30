@@ -1,8 +1,7 @@
 import random
 import sys
-
 import pygame
-from pygame.locals import Rect, DOUBLEBUF, QUIT, K_ESCAPE, KEYDOWN, K_DOWN, K_LEFT, K_UP, K_RIGHT, KEYUP, K_LCTRL, K_RETURN, FULLSCREEN
+from pygame.locals import Rect, QUIT, K_ESCAPE, KEYDOWN, K_DOWN, K_LEFT, K_UP, K_RIGHT, KEYUP
 
 X_MAX = 800
 Y_MAX = 600
@@ -11,34 +10,6 @@ LEFT, RIGHT, UP, DOWN = 0, 1, 3, 4
 START, STOP = 0, 1
 
 everything = pygame.sprite.Group()
-
-# class Collision(pygame.sprite.Sprite):
-# 	def __init__(self, obj1, obj2):
-# 		super(Collision, self).__init__()
-# 		#self.obj1_position = (obj1.x_pos, obj1.y_pos)
-# 		#self.obj2_position = (obj2.x_pos, obj2.y_pos)
-# 		self.image1 = obj1.image
-# 		self.image2 = obj2.image
-# 		self.obj1rect = obj1.rect.center
-# 		self.obj2rect = obj2.rect.center
-# 		#print(self.obj1rect)
-# 		#print(self.obj2rect)
-# 		#self.obj1rect.center = obj1.x,obj1.y
-# 		#self.obj2rect.center = obj2.x,obj2.y
-# 		self.add(everything)
-
-# 	def update(self):
-# 		x1,y1 = self.obj1rect
-# 		x2,y2 = self.obj2rect
-# 		#x1,y1 = (5,0)
-# 		#x2,y2 = (6,8)
-# 		health = 3
-# 		if (x1 == x2) or (y1 == y2):
-# 			health -= 1
-# 			if health > 1:
-# 				obj1.kill()
-# 				game_over = True
-# 				sys.exit()
 
 class Mouse(pygame.sprite.Sprite):
 	def __init__(self, x_pos, y_pos, groups):
@@ -53,7 +24,6 @@ class Mouse(pygame.sprite.Sprite):
 
 		self.add(groups)
 		self.velocity = 2
-		self.autopilot = False
 
 	def move(self, direction, operation):
 		v = 5
@@ -62,26 +32,19 @@ class Mouse(pygame.sprite.Sprite):
 				self.y -= v
 			if direction == DOWN:
 				self.y += v
-				#self.dy = {UP: -v, DOWN: v}[direction]
 
 			if direction == RIGHT:
 				self.x += v
 			if direction == LEFT:
 				self.x -= v
-				#self.dx = {LEFT: -v, RIGHT: v}[direction]
 		
 		if operation == STOP:
 			if direction in (UP, DOWN, LEFT, RIGHT):
 				self.rect.center = self.x, self.y
-				#self.dy = 0
-			#if direction in (LEFT, RIGHT):
-			#	self.dx = X_MAX/2
 
 	def update(self):
-		#x, y = self.rect.center
-		# if not self.autopilot:
-			# self.rect.center = x + self.x, y + self.y
 		if self.y == 0:
+			self.score += 1
 			self.y = Y_MAX
 			self.x = X_MAX/2
 			self.rect.center = self.x,self.y
@@ -97,8 +60,9 @@ class Mouse(pygame.sprite.Sprite):
 
 		if self.health < 0:
 			self.kill()
-		# else:
-		# 	self.rect.center = x,y
+
+	def collision(self, target):
+		return self.rect.colliderect(target)
 
 class Cat(pygame.sprite.Sprite):
 	def __init__(self, x_pos, y_pos, groups):
@@ -121,68 +85,95 @@ class Cat(pygame.sprite.Sprite):
 	def update(self):
 		self.move()
 
+class Cheese(pygame.sprite.Sprite):
+	def __init__(self, x_pos, y_pos, mouse, groups):
+		super(Cheese, self).__init__()
+		self.image = pygame.image.load("cheese.bmp").convert_alpha()
+		self.rect = self.image.get_rect()
+		self.rect.center = (x_pos, y_pos)
+		self.x = x_pos
+		self.y = y_pos
+		self.reappear_x = x_pos
+		self.reappear_y = y_pos
+		self.mouse = mouse
+		self.add(groups)
+		self.starter = 0
+	
+	def update(self):
+		while self.starter <= 0:
+			self.x = random.randint(20, X_MAX-20)
+			self.y = random.randint(20, Y_MAX-20)
+			self.rect.center = self.x,self.y
+			self.starter += 1
+	
+	def move(self):
+		self.x = random.randint(20, X_MAX-20)
+		self.y = random.randint(20, Y_MAX-20)
+		self.rect.center = self.x,self.y
 
 class Stats(pygame.sprite.Sprite):
 	def __init__(self, mouse, groups):
 		super(Stats, self).__init__()
-		self.image = pygame.Surface((X_MAX, 30))
+		self.image = pygame.Surface((100, 50))
 		self.rect = self.image.get_rect()
-		self.rect.bottomleft = 0, Y_MAX
+		self.rect.topright = X_MAX, 0
 
 		font = pygame.font.get_default_font()
 		self.font = pygame.font.Font(font, 20)
 		self.mouse = mouse
 		self.add(groups)
+
 	def update(self):
 		score = self.font.render("Score : {}".format(self.mouse.score), True, (255,255,255))
+		health = self.font.render("Lives : {}".format(self.mouse.health), True, (225,225,225))
 		self.image.fill((0,0,0))
 		self.image.blit(score, (0,0))
+		self.image.blit(health, (0,30))
 
 def main():
 	game_over = False
 
 	pygame.font.init()
 	pygame.mixer.init()
-	screen = pygame.display.set_mode((X_MAX, Y_MAX), DOUBLEBUF)
+	screen = pygame.display.set_mode((X_MAX, Y_MAX))
 	mouse = pygame.sprite.Group()
 	cat = pygame.sprite.Group()
 	collision = pygame.sprite.Group()
+	cheese = pygame.sprite.Group()
 
 	empty = pygame.Surface((X_MAX, Y_MAX))
-	mousey = Mouse(X_MAX/2, Y_MAX, everything)
-	mousey.add(everything)
+	mousey = Mouse(X_MAX/2, Y_MAX, [everything, mouse])
 	kitty_list = [
-	Cat(X_MAX-50, Y_MAX-165, everything),
-	Cat(X_MAX-230, Y_MAX-165, everything),
-	Cat(X_MAX-410, Y_MAX-165, everything),
-	Cat(X_MAX-590, Y_MAX-165, everything),
-	Cat(X_MAX-770, Y_MAX-165, everything),
-	Cat(25, Y_MAX-300, everything),
-	Cat(X_MAX-140, Y_MAX-300, everything),
-	Cat(X_MAX-320, Y_MAX-300, everything),
-	Cat(X_MAX-500, Y_MAX-300, everything),
-	Cat(X_MAX-680, Y_MAX-300, everything),
-	Cat(X_MAX-680, Y_MAX-300, everything),
-	Cat(X_MAX-50, Y_MAX-435, everything),
-	Cat(X_MAX-230, Y_MAX-435, everything),
-	Cat(X_MAX-410, Y_MAX-435, everything),
-	Cat(X_MAX-590, Y_MAX-435, everything),
-	Cat(X_MAX-770, Y_MAX-435, everything)]
+	Cat(X_MAX-50, Y_MAX-165, [everything, cat]),
+	Cat(X_MAX-230, Y_MAX-165, [everything, cat]),
+	Cat(X_MAX-410, Y_MAX-165, [everything, cat]),
+	Cat(X_MAX-590, Y_MAX-165, [everything, cat]),
+	Cat(X_MAX-770, Y_MAX-165, [everything, cat]),
+	Cat(25, Y_MAX-300, [everything, cat]),
+	Cat(X_MAX-140, Y_MAX-300, [everything, cat]),
+	Cat(X_MAX-320, Y_MAX-300, [everything, cat]),
+	Cat(X_MAX-500, Y_MAX-300, [everything, cat]),
+	Cat(X_MAX-680, Y_MAX-300, [everything, cat]),
+	Cat(X_MAX-680, Y_MAX-300, [everything, cat]),
+	Cat(X_MAX-50, Y_MAX-435, [everything, cat]),
+	Cat(X_MAX-230, Y_MAX-435, [everything, cat]),
+	Cat(X_MAX-410, Y_MAX-435, [everything, cat]),
+	Cat(X_MAX-590, Y_MAX-435, [everything, cat]),
+	Cat(X_MAX-770, Y_MAX-435, [everything, cat])]
 	
 	for kitty in kitty_list:
 		kitty.add(everything)
-		# run_in = Collision(mousey, kitty)
-		# run_in.add(everything)
 
+	cheesey = Cheese(random.randint(0,X_MAX-20), random.randint(0,Y_MAX-20), mousey, [everything, cheese])
 	game_status = Stats(mousey, everything)
 
 	while True:
 		for event in pygame.event.get():
-			if event.type == K_ESCAPE:
+			if event.type == KEYDOWN:
 				if event.key == K_ESCAPE:
-					sys.exit()
+					game_over = True
 			if not game_over:
-				if event.type in [KEYDOWN, KEYUP, K_LEFT, K_RIGHT]:
+				if event.type in [KEYDOWN, KEYUP]:
 					if event.key == K_DOWN:
 						mousey.move(DOWN, START)
 						mousey.move(DOWN, START)
@@ -200,15 +191,14 @@ def main():
 						mousey.move(UP, START)
 						mousey.move(UP, STOP)
 
-				#if event.type == KEYUP:
-					#if event.key == K_DOWN:
-					#	mousey.move(DOWN, STOP)
-					#if event.key == K_LEFT:
-					#	mousey.move(LEFT, STOP)
-					#if event.key == K_RIGHT:
-					#	mousey.move(RIGHT, STOP)
-					#if event.key == K_UP:
-						#mousey.move(UP, STOP)
+				if mousey.collision(cheesey):
+					mousey.score += 2
+					cheesey.move()
+				if mousey.collision(cat):
+					mousey.health -= 1
+					mousey.x = X_MAX/2
+					mousey.y = Y_MAX
+					mousey.rect.center = mousey.x,mousey.y
 
 		if game_over:
 			sys.exit()

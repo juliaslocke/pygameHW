@@ -10,6 +10,10 @@ LEFT, RIGHT, UP, DOWN = 0, 1, 3, 4
 START, STOP = 0, 1
 
 everything = pygame.sprite.Group()
+mouse = pygame.sprite.Group()
+cat = pygame.sprite.Group()
+cheese = pygame.sprite.Group()
+game_over_screen = pygame.sprite.Group()
 
 class Mouse(pygame.sprite.Sprite):
 	def __init__(self, x_pos, y_pos, groups, outside_group):
@@ -33,7 +37,6 @@ class Mouse(pygame.sprite.Sprite):
 				self.y -= v
 			if direction == DOWN:
 				self.y += v
-
 			if direction == RIGHT:
 				self.x += v
 			if direction == LEFT:
@@ -100,8 +103,6 @@ class Cheese(pygame.sprite.Sprite):
 		self.rect.center = (x_pos, y_pos)
 		self.x = x_pos
 		self.y = y_pos
-		self.reappear_x = x_pos
-		self.reappear_y = y_pos
 		self.mouse = mouse
 		self.add(groups)
 		self.starter = 0
@@ -117,6 +118,19 @@ class Cheese(pygame.sprite.Sprite):
 		self.x = random.randint(20, X_MAX-20)
 		self.y = random.randint(20, Y_MAX-20)
 		self.rect.center = self.x,self.y
+
+class Mouse_Hole(pygame.sprite.Sprite):
+	def __init__(self, x_pos, y_pos, groups):
+		super(Mouse_Hole, self).__init__()
+		self.image = pygame.image.load("hole.bmp").convert_alpha()
+		self.rect = self.image.get_rect()
+		self.rect.center = (x_pos, y_pos)
+		self.x = x_pos
+		self.y = y_pos
+		self.add(groups)
+
+	def update(self):
+		pass
 
 class Stats(pygame.sprite.Sprite):
 	def __init__(self, mouse, groups):
@@ -148,16 +162,31 @@ class Level_Stats(Stats):
 		self.image.fill((0,0,0))
 		self.image.blit(level, (0,0))
 
+class Game_Over(pygame.sprite.Sprite):
+	def __init__(self, mouse, groups):
+		super(Game_Over, self).__init__()
+		self.image = pygame.Surface((X_MAX,Y_MAX))
+		self.rect = self.image.get_rect()
+		self.rect.center = X_MAX/2, Y_MAX/2
+
+		font = pygame.font.get_default_font()
+		self.font = pygame.font.Font(font, 80)
+		self.font2 = pygame.font.Font(font, 40)
+		self.mouse = mouse
+		self.add(groups)
+
+	def update(self):
+		game = self.font.render("GAME OVER", True, (255, 0, 0))
+		final_level = self.font2.render("Made it to Level : {}".format(self.mouse.level), True, (255,255,255))
+		self.image.blit(game, (150,250))
+		self.image.blit(final_level, (180, 350))
+
 def main():
 	game_over = False
 
 	pygame.font.init()
 	pygame.mixer.init()
 	screen = pygame.display.set_mode((X_MAX, Y_MAX))
-	mouse = pygame.sprite.Group()
-	cat = pygame.sprite.Group()
-	collision = pygame.sprite.Group()
-	cheese = pygame.sprite.Group()
 
 	empty = pygame.Surface((X_MAX, Y_MAX))
 	mousey = Mouse(X_MAX/2, Y_MAX, [everything, mouse], cat)
@@ -178,11 +207,18 @@ def main():
 	Cat(X_MAX-410, Y_MAX-435, 0.5, [everything, cat]),
 	Cat(X_MAX-590, Y_MAX-435, 0.5, [everything, cat]),
 	Cat(X_MAX-770, Y_MAX-435, 0.5, [everything, cat])]
+
+	hole_list = [
+	Mouse_Hole(X_MAX-100, 40, everything),
+	Mouse_Hole(X_MAX-300, 40, everything),
+	Mouse_Hole(X_MAX-500, 40, everything),
+	Mouse_Hole(X_MAX-700, 40, everything)]
 	
 
-	cheesey = Cheese(random.randint(0,X_MAX-20), random.randint(0,Y_MAX-20), mousey, [everything, cheese])
+	cheesey = Cheese(random.randint(0,X_MAX-50), random.randint(0,Y_MAX-80), mousey, [everything, cheese])
 	game_status = Stats(mousey, everything)
 	level_status = Level_Stats(mousey, everything)
+	#end_game = Game_Over(mousey, game_over_screen)
 
 	while True:
 		for event in pygame.event.get():
@@ -218,8 +254,19 @@ def main():
 						mousey.y = Y_MAX
 						mousey.rect.center = mousey.x,mousey.y
 
+		# everything.clear(screen, empty)
+		# everything.update()
+		# everything.draw(screen)
+		# pygame.display.flip()
+
 		if game_over:
+			end_game = Game_Over(mousey, everything)
+			end_game.update()
 			sys.exit()
+		# new_screen = pygame.display.set_mode((X_MAX, Y_MAX))
+		# game_over_screen.draw(new_screen)
+		# pygame.display.flip()
+			#sys.exit()
 
 		everything.clear(screen, empty)
 		everything.update()

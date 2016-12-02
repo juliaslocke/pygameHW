@@ -9,11 +9,14 @@ Y_MAX = 600
 LEFT, RIGHT, UP, DOWN = 0, 1, 3, 4
 START, STOP = 0, 1
 
+screen = pygame.display.set_mode((X_MAX, Y_MAX))
+empty = pygame.Surface((X_MAX, Y_MAX))
 everything = pygame.sprite.Group()
 mouse = pygame.sprite.Group()
 cat = pygame.sprite.Group()
 cheese = pygame.sprite.Group()
 game_over_screen = pygame.sprite.Group()
+pygame.mixer.init(frequency=22050, size=-16, channels=2, buffer=4096)
 
 class Mouse(pygame.sprite.Sprite):
 	def __init__(self, x_pos, y_pos, groups, outside_group):
@@ -29,6 +32,8 @@ class Mouse(pygame.sprite.Sprite):
 		self.add(groups)
 		self.velocity = 2
 		self.other_group = outside_group
+		self.level_sound = pygame.mixer.Sound('pacman_eatghost.wav')
+		self.end_sound = pygame.mixer.Sound('pacman_death.wav')
 
 	def move(self, direction, operation):
 		v = 5
@@ -48,6 +53,7 @@ class Mouse(pygame.sprite.Sprite):
 
 	def update(self):
 		if self.y == 0:
+			self.level_sound.play()
 			self.score += 1
 			self.y = Y_MAX
 			self.x = X_MAX/2
@@ -66,6 +72,12 @@ class Mouse(pygame.sprite.Sprite):
 			self.rect.center = self.x, self.y
 
 		if self.health <= 0:
+			self.end_sound.play()
+			end_game = Game_Over(self, game_over_screen)
+			everything.clear(screen, empty)
+			end_game.update()
+			game_over_screen.draw(screen)
+			pygame.display.flip()
 			sys.exit()
 
 	def collision(self, target):
@@ -106,6 +118,9 @@ class Cheese(pygame.sprite.Sprite):
 		self.mouse = mouse
 		self.add(groups)
 		self.starter = 0
+		self.eat_sound = pygame.mixer.Sound('pacman_eatfruit.wav')
+
+
 	
 	def update(self):
 		while self.starter <= 0:
@@ -179,16 +194,14 @@ class Game_Over(pygame.sprite.Sprite):
 		game = self.font.render("GAME OVER", True, (255, 0, 0))
 		final_level = self.font2.render("Made it to Level : {}".format(self.mouse.level), True, (255,255,255))
 		self.image.blit(game, (150,250))
-		self.image.blit(final_level, (180, 350))
+		self.image.blit(final_level, (220, 350))
 
 def main():
 	game_over = False
 
 	pygame.font.init()
 	pygame.mixer.init()
-	screen = pygame.display.set_mode((X_MAX, Y_MAX))
 
-	empty = pygame.Surface((X_MAX, Y_MAX))
 	mousey = Mouse(X_MAX/2, Y_MAX, [everything, mouse], cat)
 	kitty_list = [
 	Cat(X_MAX-50, Y_MAX-165, 0.5, [everything, cat]),
@@ -218,7 +231,6 @@ def main():
 	cheesey = Cheese(random.randint(0,X_MAX-50), random.randint(0,Y_MAX-80), mousey, [everything, cheese])
 	game_status = Stats(mousey, everything)
 	level_status = Level_Stats(mousey, everything)
-	#end_game = Game_Over(mousey, game_over_screen)
 
 	while True:
 		for event in pygame.event.get():
@@ -247,6 +259,7 @@ def main():
 				if mousey.collision(cheesey):
 					mousey.score += 2
 					cheesey.move()
+					cheesey.eat_sound.play()
 				for kitty in kitty_list:
 					if mousey.collision(kitty):
 						mousey.health -= 1
@@ -254,23 +267,19 @@ def main():
 						mousey.y = Y_MAX
 						mousey.rect.center = mousey.x,mousey.y
 
-		# everything.clear(screen, empty)
-		# everything.update()
-		# everything.draw(screen)
-		# pygame.display.flip()
-
-		if game_over:
-			end_game = Game_Over(mousey, everything)
-			end_game.update()
-			sys.exit()
-		# new_screen = pygame.display.set_mode((X_MAX, Y_MAX))
-		# game_over_screen.draw(new_screen)
-		# pygame.display.flip()
-			#sys.exit()
-
 		everything.clear(screen, empty)
 		everything.update()
 		everything.draw(screen)
 		pygame.display.flip()
+
+		if game_over:
+			mousey.end_sound.play()
+			end_game = Game_Over(mousey, game_over_screen)
+			everything.clear(screen, empty)
+			end_game.update()
+			game_over_screen.draw(screen)
+			pygame.display.flip()
+			sys.exit()
+
 if __name__ == '__main__':
 	main()
